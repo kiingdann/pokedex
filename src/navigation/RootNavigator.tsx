@@ -7,19 +7,11 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: '#030712' },
-        headerTintColor: '#fff',
-        contentStyle: { backgroundColor: '#030712' },
-      }}
-    >
-      <Stack.Screen name="BattleGrid" component={BattleGridScreen} options={{ title: 'Battle Grid' }} />
-      <Stack.Screen
-        name="PokemonDetail"
-        component={PokemonDetailScreen}
-        options={({ route }) => ({ title: route.params.pokemonName })}
-      />
+    // both screens build their own pixel-styled header (back button, title,
+    // safe area handling), so the native header is turned off entirely
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#9dceff' } }}>
+      <Stack.Screen name="BattleGrid" component={BattleGridScreen} />
+      <Stack.Screen name="PokemonDetail" component={PokemonDetailScreen} />
     </Stack.Navigator>
   );
 }

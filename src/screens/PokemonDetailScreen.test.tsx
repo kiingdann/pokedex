@@ -1,9 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SafeAreaProvider, type Metrics } from 'react-native-safe-area-context';
 import { PokemonDetailScreen } from './PokemonDetailScreen';
 import { storage } from '../storage/mmkv';
 import type { RootStackParamList } from '../navigation/types';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+
+const testSafeAreaMetrics: Metrics = {
+  frame: { x: 0, y: 0, width: 375, height: 812 },
+  insets: { top: 0, left: 0, right: 0, bottom: 0 },
+};
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PokemonDetail'>;
 
@@ -63,9 +69,11 @@ describe('PokemonDetailScreen', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
     await render(
-      <QueryClientProvider client={client}>
-        <PokemonDetailScreen route={makeRoute(25, 'pikachu')} navigation={{} as Props['navigation']} />
-      </QueryClientProvider>,
+      <SafeAreaProvider initialMetrics={testSafeAreaMetrics}>
+        <QueryClientProvider client={client}>
+          <PokemonDetailScreen route={makeRoute(25, 'pikachu')} navigation={{} as Props['navigation']} />
+        </QueryClientProvider>
+      </SafeAreaProvider>,
     );
 
     expect(await screen.findByText('electric')).toBeTruthy();
@@ -80,9 +88,11 @@ describe('PokemonDetailScreen', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
     await render(
-      <QueryClientProvider client={client}>
-        <PokemonDetailScreen route={makeRoute(25, 'pikachu')} navigation={{} as Props['navigation']} />
-      </QueryClientProvider>,
+      <SafeAreaProvider initialMetrics={testSafeAreaMetrics}>
+        <QueryClientProvider client={client}>
+          <PokemonDetailScreen route={makeRoute(25, 'pikachu')} navigation={{} as Props['navigation']} />
+        </QueryClientProvider>
+      </SafeAreaProvider>,
     );
 
     await waitFor(async () => {

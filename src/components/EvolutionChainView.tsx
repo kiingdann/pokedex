@@ -4,7 +4,12 @@ import { buildSpriteUrl } from '../utils/pokeUrl';
 
 interface EvolutionChainViewProps {
   node: EvolutionNode;
-  depth?: number;
+}
+
+// sprites get a bit bigger at each stage in the design (56 -> 72 -> 81),
+// this approximates that without hardcoding a size per depth
+function spriteSizeForDepth(depth: number): number {
+  return Math.min(56 + depth * 16, 88);
 }
 
 function evolutionCondition(node: EvolutionNode): string | null {
@@ -13,21 +18,57 @@ function evolutionCondition(node: EvolutionNode): string | null {
   return null;
 }
 
-// recursive because the chain itself is a tree (eevee branches into 8),
-// each stage just renders itself then its children indented underneath
-export function EvolutionChainView({ node, depth = 0 }: EvolutionChainViewProps) {
+// the chain is a tree (eevee branches into 8), but the design only shows a
+// single horizontal row. instead of trying to draw branches, each full path
+// from root to a leaf becomes its own row, stacked vertically
+function flattenToPaths(node: EvolutionNode, prefix: EvolutionNode[] = []): EvolutionNode[][] {
+  const path = [...prefix, node];
+  if (node.evolvesTo.length === 0) return [path];
+  return node.evolvesTo.flatMap((child) => flattenToPaths(child, path));
+}
+
+function EvolutionStage({ node, depth }: { node: EvolutionNode; depth: number }) {
   const condition = evolutionCondition(node);
+  const size = spriteSizeForDepth(depth);
 
   return (
-    <View style={{ marginLeft: depth * 16 }}>
-      <View className="flex-row items-center gap-2 py-1">
-        {depth > 0 && <Text className="text-gray-500">{'→'}</Text>}
-        <Image source={{ uri: buildSpriteUrl(node.speciesId) }} className="h-10 w-10" resizeMode="contain" />
-        <Text className="capitalize text-white">{node.speciesName}</Text>
-        {condition && <Text className="text-xs text-gray-400">({condition})</Text>}
-      </View>
-      {node.evolvesTo.map((child) => (
-        <EvolutionChainView key={child.speciesId} node={child} depth={depth + 1} />
+    <View className="items-center" style={{ width: 72 }}>
+      <Image source={{ uri: buildSpriteUrl(node.speciesId) }} style={{ width: size, height: size }} resizeMode="contain" />
+      <Text className="text-center font-outfit-semibold text-[10px] text-pokedex-ink">{node.speciesName}</Text>
+      {condition && <Text className="text-center font-outfit-medium text-[8px] text-pokedex-levelText">{condition}</Text>}
+    </View>
+  );
+}
+
+function EvolutionRow({ path }: { path: EvolutionNode[] }) {
+  return (
+    <View className="w-full flex-row items-center">
+      {path.map((node, index) => (
+        // flex:1 on every wrapper but the first turns each gap between
+        // stages into its own equal spacer, so the arrow inside centers
+        // itself in that gap no matter how many stages there are (with
+        // justify-between the arrow just sat next to whichever stage
+        // rendered after it, which looked centered only by coincidence
+        // when there happened to be 3 stages)
+        <View key={node.speciesId} className="flex-row items-center" style={index > 0 ? { flex: 1 } : undefined}>
+          {index > 0 && (
+            <Text className="flex-1 text-center font-pixel text-base text-pokedex-ink">{'→'}</Text>
+          )}
+          <EvolutionStage node={node} depth={index} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+export function EvolutionChainView({ node }: EvolutionChainViewProps) {
+  const paths = flattenToPaths(node);
+
+  return (
+    <View className="w-full gap-4 border border-pokedex-ink/10 bg-pokedex-panel p-[18px] opacity-90">
+      {paths.map((path, index) => (
+        // index is fine here, this list doesn't reorder within one render of a given chain
+        <EvolutionRow key={index} path={path} />
       ))}
     </View>
   );

@@ -3,7 +3,8 @@ import { View, Text, Image, Pressable } from 'react-native';
 import type { PokemonSummary } from '../types/pokemon';
 import { usePokemonDetailQuery } from '../hooks/usePokemonDetailQuery';
 import { useLiveStatsStore } from '../store/liveStatsStore';
-import { StatBar } from './StatBar';
+import { PixelStatBar } from './PixelStatBar';
+import { PixelTypeBadge } from './PixelTypeBadge';
 import { statLabel } from '../utils/statLabels';
 
 interface PokemonCardProps {
@@ -30,25 +31,37 @@ function PokemonCardComponent({ pokemon, onPress }: PokemonCardProps) {
   const liveStats = useLiveStatsStore((state) => state.liveStats[pokemon.id]);
 
   return (
-    <Pressable
-      onPress={() => onPress(pokemon)}
-      className="flex-row items-center gap-3 border-b border-gray-800 bg-gray-950 px-4 py-3"
-    >
-      <Image source={{ uri: pokemon.spriteUrl }} className="h-16 w-16" resizeMode="contain" />
-      <View className="flex-1">
-        <Text className="text-base font-semibold capitalize text-white">{pokemon.name}</Text>
-        {liveStats ? (
-          <View className="mt-1 flex-row flex-wrap gap-x-3 gap-y-1">
-            {liveStats.map((stat) => (
-              <StatBar key={stat.name} label={statLabel(stat.name)} value={stat.liveValue} />
-            ))}
-          </View>
-        ) : (
-          <Text className="mt-1 text-xs text-gray-500">
+    <Pressable onPress={() => onPress(pokemon)} className="w-full border-2 border-pokedex-cardBorder bg-pokedex-card p-1">
+      <View className="flex-row items-center gap-3 p-2">
+        <View className="h-16 w-16 items-center justify-center border-2 border-pokedex-spriteBorder bg-pokedex-sprite">
+          <Image source={{ uri: pokemon.spriteUrl }} className="h-14 w-14" resizeMode="contain" />
+        </View>
+        <View className="flex-1 gap-2">
+          <Text className="font-pixel text-sm uppercase text-pokedex-ink">{pokemon.name}</Text>
+          {detailState.status === 'success' && (
+            <View className="flex-row gap-1">
+              {detailState.data.types.map((type) => (
+                <PixelTypeBadge key={type} type={type} />
+              ))}
+            </View>
+          )}
+        </View>
+        <Text className="text-2xl font-bold text-pokedex-ink">{'›'}</Text>
+      </View>
+
+      {liveStats ? (
+        <View className="flex-row flex-wrap bg-pokedex-statBg p-2 opacity-90">
+          {liveStats.map((stat) => (
+            <PixelStatBar key={stat.name} label={statLabel(stat.name)} value={stat.liveValue} />
+          ))}
+        </View>
+      ) : (
+        <View className="bg-pokedex-statBg p-2 opacity-90">
+          <Text className="font-dotgothic text-xs text-pokedex-statFilled">
             {detailState.status === 'error' ? 'stats unavailable' : 'loading stats...'}
           </Text>
-        )}
-      </View>
+        </View>
+      )}
     </Pressable>
   );
 }

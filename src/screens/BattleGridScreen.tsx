@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
-import { View, Text, FlatList, ActivityIndicator, type ViewToken } from 'react-native';
+import { View, Text, Image, FlatList, ActivityIndicator, type ViewToken } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { usePokemonListQuery } from '../hooks/usePokemonListQuery';
@@ -9,9 +10,8 @@ import type { PokemonSummary } from '../types/pokemon';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BattleGrid'>;
 
-const ROW_HEIGHT = 96;
-
 export function BattleGridScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { asyncState, fetchNextPage, hasNextPage, isFetchingNextPage } = usePokemonListQuery();
 
   // visible ids on screen, kept in a ref instead of state. scrolling fires
@@ -44,61 +44,76 @@ export function BattleGridScreen({ navigation }: Props) {
 
   const keyExtractor = useCallback((item: PokemonSummary) => String(item.id), []);
 
-  const getItemLayout = useCallback(
-    (_data: ArrayLike<PokemonSummary> | null | undefined, index: number) => ({
-      length: ROW_HEIGHT,
-      offset: ROW_HEIGHT * index,
-      index,
-    }),
-    [],
-  );
-
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const header = (
+    <View
+      className="w-full items-center justify-center border-b border-pokedex-border bg-pokedex-bg p-4"
+      style={{ paddingTop: insets.top + 16 }}
+    >
+      <Image
+        source={require('../../assets/pixel/pokedex-logo.png')}
+        style={{ width: 99, height: 33 }}
+        resizeMode="contain"
+      />
+    </View>
+  );
+
   if (asyncState.status === 'idle' || asyncState.status === 'loading') {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-950">
-        <ActivityIndicator color="#34d399" />
+      <View className="flex-1 bg-pokedex-bg">
+        {header}
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color="#002851" />
+        </View>
       </View>
     );
   }
 
   if (asyncState.status === 'error') {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-950 px-6">
-        <Text className="text-center text-red-400">{asyncState.message}</Text>
+      <View className="flex-1 bg-pokedex-bg">
+        {header}
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="text-center font-outfit text-pokedex-ink">{asyncState.message}</Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <FlatList
-      className="flex-1 bg-gray-950"
-      data={asyncState.data}
-      keyExtractor={keyExtractor}
-      renderItem={renderItem}
-      getItemLayout={getItemLayout}
-      onViewableItemsChanged={handleViewableItemsChanged}
-      viewabilityConfig={viewabilityConfig}
-      onEndReached={handleEndReached}
-      onEndReachedThreshold={0.5}
-      // standard tuning to keep scrolling smooth on a long list: only
-      // mount what's needed around the visible window, unmount the rest
-      initialNumToRender={12}
-      maxToRenderPerBatch={8}
-      windowSize={7}
-      removeClippedSubviews
-      ListFooterComponent={
-        isFetchingNextPage ? (
-          <View className="py-4">
-            <ActivityIndicator color="#34d399" />
-          </View>
-        ) : null
-      }
-    />
+    <View className="flex-1 bg-pokedex-bg">
+      {header}
+      <FlatList
+        className="flex-1"
+        contentContainerStyle={{ padding: 16, gap: 10 }}
+        data={asyncState.data}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        // no getItemLayout here on purpose: card height changes once a
+        // card's detail finishes loading (badges + full stat grid appear),
+        // so a fixed row height would drift and fight FlatList's own
+        // measurements, causing visible scroll jumps
+        initialNumToRender={12}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="py-4">
+              <ActivityIndicator color="#002851" />
+            </View>
+          ) : null
+        }
+      />
+    </View>
   );
 }

@@ -1,4 +1,4 @@
-# Pokédex — Temps Réel sous Stress
+# Pokédex : Temps Réel sous Stress
 
 Application React Native / Expo réalisée dans le cadre d'un test technique. Elle comporte deux
 écrans : une grille en scroll infini (« Battle Grid ») dans laquelle les statistiques des
@@ -8,7 +8,7 @@ entièrement hors-ligne dès qu'un Pokémon a été consulté au moins une fois.
 
 Les données proviennent de [PokéAPI](https://pokeapi.co/docs/v2). Le brief ne fixe pas
 d'exigence de design particulière ; les écrans ont néanmoins été redessinés par la suite à
-partir d'une maquette Figma, dans un style rétro pixel-Pokédex — voir la section
+partir d'une maquette Figma, dans un style rétro pixel-Pokédex. Voir la section
 [Design](#design) ci-dessous.
 
 ## Démarrage
@@ -41,7 +41,7 @@ l'appareil :
 npm start
 ```
 
-puis ouvrir l'application déjà installée — elle se connecte automatiquement à Metro.
+puis ouvrir l'application déjà installée : elle se connecte automatiquement à Metro.
 
 ### Tests
 
@@ -122,7 +122,7 @@ statistiques changent, jamais à cause d'une autre carte ou du défilement lui-m
   concerne. Zustand ne redessine un composant que si cette portion précise a changé. Le moteur
   de tick ne remplace la référence en mémoire que pour les Pokémon effectivement mis à jour :
   une carte non visible conserve donc exactement la même référence d'un tick à l'autre et ne se
-  redessine jamais — ce comportement est vérifié directement dans `PokemonCard.test.tsx`, à
+  redessine jamais. Ce comportement est vérifié directement dans `PokemonCard.test.tsx`, à
   l'aide d'un `React.Profiler` qui compte les rendus effectifs.
 
 - **`PokemonCard` est enveloppée dans `React.memo`**, avec un comparateur personnalisé qui ne
@@ -145,9 +145,9 @@ statistiques changent, jamais à cause d'une autre carte ou du défilement lui-m
 `useAppStateAwareInterval` (`src/hooks/useAppStateAwareInterval.ts`) est un hook générique qui
 ne démarre un minuteur que lorsque `AppState.currentState === 'active'`, et l'arrête dès que
 l'application passe en arrière-plan, pour le relancer automatiquement au retour au premier plan.
-Le moteur de statistiques en direct est construit sur cette base : le polling à 500ms — et tout
-autre minuteur construit selon le même principe — ne s'exécute jamais pendant que l'utilisateur
-se trouve sur une autre application.
+Le moteur de statistiques en direct est construit sur cette base : le polling à 500ms, comme
+tout autre minuteur construit selon le même principe, ne s'exécute jamais pendant que
+l'utilisateur se trouve sur une autre application.
 
 ### Cache hors-ligne (Écran 2)
 
@@ -199,8 +199,8 @@ flux de données, le store, le cache et le moteur de tick restent inchangés.
 
 Une soixantaine de tests unitaires et d'intégration couvrent la couche API (validation Zod,
 mappers, pipeline de récupération des données), le store Zustand, les hooks personnalisés, ainsi
-que des composants et écrans testés avec `@testing-library/react-native` — environ 94% des
-lignes sont couvertes (`npm run test:coverage`). Les quelques fichiers non couverts relèvent
+que des composants et écrans testés avec `@testing-library/react-native`, avec environ 94% des
+lignes couvertes (`npm run test:coverage`). Les quelques fichiers non couverts relèvent
 soit du typage pur (aucune ligne exécutable à tester), soit d'un câblage trivial (instanciation
 d'un client, configuration de navigation). Quelques tests méritent d'être signalés :
 

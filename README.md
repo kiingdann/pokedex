@@ -8,7 +8,7 @@ qu'un Pokémon a été consulté au moins une fois.
 
 Les données viennent de [PokéAPI](https://pokeapi.co/docs/v2). Le brief ne demande pas de
 design particulier, mais l'app a ensuite été redesignée à partir d'une maquette Figma dans un
-style rétro pixel-Pokédex — voir [Design](#design) plus bas.
+style rétro pixel-Pokédex , voir [Design](#design) plus bas.
 
 ## Démarrage
 
@@ -66,7 +66,7 @@ src/
 
 Chaque réponse de l'API passe par le même pipeline : **fetch → validation avec Zod → mapping
 vers un type domaine**. Rien en aval de `src/api/pokemonApi.ts` ne voit jamais la forme brute de
-PokéAPI — les composants travaillent avec `PokemonSummary` / `PokemonDetail` /
+PokéAPI, les composants travaillent avec `PokemonSummary` / `PokemonDetail` /
 `PokemonFullDetail`, jamais avec `PokemonDetailResponse`. Si PokéAPI renvoie un jour quelque
 chose d'inattendu, `.parse()` lève une erreur et react-query la remonte comme un vrai état
 d'erreur, plutôt que de laisser l'UI planter silencieusement avec des données à moitié valides.
@@ -110,7 +110,7 @@ carte ou du scroll lui-même.
 - **Un seul timer global, pas un par carte.** `useLiveStatsEngine` fait tourner un seul minuteur
   (via `useAppStateAwareInterval`, voir plus bas) qui, toutes les 500ms, regarde quels Pokémon
   sont *actuellement visibles à l'écran* et ne met à jour que ceux-là. La visibilité vient du
-  `onViewableItemsChanged` de la FlatList, stockée dans un `ref` — pas dans un state React —
+  `onViewableItemsChanged` de la FlatList, stockée dans un `ref` , pas dans un state React ,
   pour que le simple fait de scroller ne redessine jamais tout l'écran.
 
 - **Chaque carte ne s'abonne qu'à ses propres données.** Chaque `PokemonCard` s'abonne au store
@@ -118,7 +118,7 @@ carte ou du scroll lui-même.
   concerne. Zustand ne redessine un composant que si CETTE portion précise a changé. Le moteur
   de tick ne remplace la référence en mémoire que pour les Pokémon réellement mis à jour, donc
   une carte non-visible garde exactement la même référence d'un tick à l'autre et ne se redessine
-  jamais — c'est prouvé directement dans `PokemonCard.test.tsx`, qui compte les vrais rendus avec
+  jamais , c'est prouvé directement dans `PokemonCard.test.tsx`, qui compte les vrais rendus avec
   un `React.Profiler`.
 
 - **`PokemonCard` est enveloppée dans `React.memo`**, avec une comparaison custom qui ne regarde
@@ -130,7 +130,7 @@ carte ou du scroll lui-même.
   passait un `getItemLayout` fixe pour éviter à la FlatList de mesurer chaque item elle-même.
   Mais une fois que les cartes se sont mises à afficher plus de contenu une fois leur détail
   chargé (badges de type, grille de stats complète vs. une ligne "chargement..."), la hauteur
-  réelle de chaque carte s'est mise à varier dans le temps — ce qui a rendu l'hypothèse "hauteur
+  réelle de chaque carte s'est mise à varier dans le temps , ce qui a rendu l'hypothèse "hauteur
   fixe" fausse, et a fait sauter le scroll par moments (la FlatList se recalait toute seule).
   `getItemLayout` a été retiré plutôt que rafistolé : aucune valeur fixe ne peut être correcte à
   partir du moment où la hauteur dépend elle-même de l'état de chargement.
@@ -141,13 +141,13 @@ carte ou du scroll lui-même.
 générique : il ne démarre un minuteur que quand `AppState.currentState === 'active'`, et le
 coupe dès que l'app passe en arrière-plan, pour le relancer automatiquement au retour au premier
 plan. Le moteur de stats live est construit dessus, donc le polling à 500ms — et n'importe quel
-autre timer construit de la même façon — ne tourne jamais pendant que l'utilisateur est sur une
+autre timer construit de la même façon , ne tourne jamais pendant que l'utilisateur est sur une
 autre app.
 
 ### Cache hors-ligne (Écran 2)
 
 Le brief scope explicitement le cache hors-ligne à l'écran de détail, donc c'est là qu'il vit.
-Le cache de react-query est seulement en mémoire — il disparaît dès que le process de l'app
+Le cache de react-query est seulement en mémoire , il disparaît dès que le process de l'app
 meurt, ce qui n'est pas vraiment un mode "100% autonome hors-ligne". MMKV est un stockage
 clé-valeur synchrone et rapide sur disque, ce qui est exactement ce qu'il faut pour un **cache à
 double sens (écriture puis lecture de secours)** :
@@ -174,19 +174,15 @@ comportement d'échec évident (jamais vu + hors-ligne = vraie erreur, testé da
 ### Pourquoi MMKV plutôt que SQLite
 
 Ce qu'on met en cache pour l'écran 2, c'est un objet JSON par id de Pokémon (`PokemonDetail` +
-description + arbre d'évolution) — pas besoin de requêtes relationnelles. MMKV est un
+description + arbre d'évolution) , pas besoin de requêtes relationnelles. MMKV est un
 stockage clé-valeur synchrone (pas besoin de `await` pour lire/écrire), ce qui garde le fallback
 dans `fetchWithOfflineFallback` simple et rapide ; SQLite aurait imposé des requêtes async et un
 schéma pour des données qui sont en réalité juste "un objet, indexé par id".
 
 ## Design
 
-Le brief déprioritise explicitement le design visuel. Les écrans ont ensuite été redessinés à
-partir d'une maquette Figma dans un style rétro pixel-Pokédex (polices custom, barre de stats en
-segments, badges de type pixel, écran de splash et icône de l'app). Ce travail vient se poser
-au-dessus de l'architecture ci-dessus sans y toucher : `PixelStatBar` et `PixelTypeBadge` ont
-remplacé les composants précédents, mais le flux de données, le store, le cache et le moteur de
-tick n'ont pas changé.
+Les écrans ont ensuite designés à partir d'une maquette Figma dans un style rétro pixel-Pokédex (polices custom, barre de stats en
+segments, badges de type pixel, écran de splash et icône de l'app). 
 
 ## Tests
 
@@ -197,19 +193,19 @@ mappers, pipeline de fetch), le store zustand, les hooks custom, et des tests de
 ligne exécutable à tester), soit du câblage trivial (instanciation d'un client, config de
 navigation). Quelques tests qui valent le coup d'œil :
 
-- `PokemonCard.test.tsx` — utilise un `React.Profiler` pour vérifier qu'une carte ne se
+- `PokemonCard.test.tsx` : utilise un `React.Profiler` pour vérifier qu'une carte ne se
   redessine PAS quand les stats d'un AUTRE Pokémon changent, seulement les siennes. C'est la
   vraie promesse de performance, testée directement plutôt qu'affirmée dans un commentaire.
-- `usePokemonFullDetailQuery.test.tsx` — simule un échec réseau et vérifie que le hook retombe
+- `usePokemonFullDetailQuery.test.tsx` : simule un échec réseau et vérifie que le hook retombe
   bien sur une entrée MMKV pré-remplie, c'est-à-dire que le mode hors-ligne est vérifié, pas
   juste codé en espérant que ça marche.
-- `EvolutionChainView.test.tsx` — garde-fou direct contre un vrai bug rencontré (la flèche entre
+- `EvolutionChainView.test.tsx` : garde-fou direct contre un vrai bug rencontré (la flèche entre
   deux évolutions n'était pas centrée pour une chaîne à 2 étapes) : le test vérifie que le
   conteneur de la flèche a bien `flex: 1`, qui est le mécanisme exact utilisé pour corriger le
   bug.
 
 `react-native-mmkv` et `AppState` sont mockés sous Jest (`jest.setup.js` et des
 `Object.defineProperty` par test) puisque leur comportement natif/OS réel n'est pas disponible
-dans l'environnement de test — les mocks reproduisent l'API réelle d'assez près pour que les
+dans l'environnement de test , les mocks reproduisent l'API réelle d'assez près pour que les
 tests vérifient la vraie logique applicative, pas les mocks eux-mêmes.
 

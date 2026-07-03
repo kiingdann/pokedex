@@ -1,8 +1,15 @@
 import { apiGet } from './client';
 import { pokemonListResponseSchema } from './schemas/pokemonList.schema';
 import { pokemonDetailSchema } from './schemas/pokemonDetail.schema';
-import { mapListResponseToSummaries, mapDetailToDomain } from './mappers';
-import type { PokemonDetail, PokemonSummary } from '../types/pokemon';
+import { pokemonSpeciesSchema } from './schemas/pokemonSpecies.schema';
+import { evolutionChainResponseSchema } from './schemas/evolutionChain.schema';
+import {
+  mapListResponseToSummaries,
+  mapDetailToDomain,
+  mapEvolutionChainToDomain,
+  extractEnglishDescription,
+} from './mappers';
+import type { PokemonDetail, PokemonFullDetail, PokemonSummary } from '../types/pokemon';
 
 // every function here does the same 3 steps: fetch, validate with zod, map
 // to a domain type. if validation fails we just let the zod error bubble up,
@@ -28,4 +35,22 @@ export async function fetchPokemonDetail(idOrName: number | string): Promise<Pok
   const raw = await apiGet(`/pokemon/${idOrName}`);
   const parsed = pokemonDetailSchema.parse(raw);
   return mapDetailToDomain(parsed);
+}
+
+// screen 2 needs 3 endpoints and each one depends on a url from the last
+// (detail -> species -> evolution chain), so this can't be parallelized
+export async function fetchPokemonFullDetail(idOrName: number | string): Promise<PokemonFullDetail> {
+  const detail = await fetchPokemonDetail(idOrName);
+
+  const rawSpecies = await apiGet(detail.speciesUrl);
+  const species = pokemonSpeciesSchema.parse(rawSpecies);
+
+  const rawEvolutionChain = await apiGet(species.evolution_chain.url);
+  const evolutionChain = evolutionChainResponseSchema.parse(rawEvolutionChain);
+
+  return {
+    ...detail,
+    description: extractEnglishDescription(species),
+    evolution: mapEvolutionChainToDomain(evolutionChain.chain),
+  };
 }

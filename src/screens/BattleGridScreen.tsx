@@ -9,9 +9,6 @@ import type { PokemonSummary } from '../types/pokemon';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BattleGrid'>;
 
-// fixed row height, known ahead of time - lets us give getItemLayout to
-// the FlatList so it skips measuring every item, which speeds up scrolling
-// a lot on a big list
 const ROW_HEIGHT = 96;
 
 export function BattleGridScreen({ navigation }: Props) {

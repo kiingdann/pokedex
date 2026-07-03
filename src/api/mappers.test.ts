@@ -1,6 +1,13 @@
-import { mapListResponseToSummaries, mapDetailToDomain } from './mappers';
+import {
+  mapListResponseToSummaries,
+  mapDetailToDomain,
+  mapEvolutionChainToDomain,
+  extractEnglishDescription,
+} from './mappers';
 import type { PokemonListResponse } from './schemas/pokemonList.schema';
 import type { PokemonDetailResponse } from './schemas/pokemonDetail.schema';
+import type { EvolutionChainLink } from './schemas/evolutionChain.schema';
+import type { PokemonSpeciesResponse } from './schemas/pokemonSpecies.schema';
 
 describe('mapListResponseToSummaries', () => {
   it('extracts the id and builds the sprite from each entry url', () => {
@@ -84,5 +91,123 @@ describe('mapDetailToDomain', () => {
 
     expect(result.spriteUrl).toContain('/pokemon/25.png');
     expect(result.artworkUrl).toContain('/official-artwork/25.png');
+  });
+});
+
+describe('mapEvolutionChainToDomain', () => {
+  it('maps a linear chain and puts the evolution condition on the right node', () => {
+    const chain: EvolutionChainLink = {
+      species: { name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon-species/1/' },
+      evolution_details: [],
+      evolves_to: [
+        {
+          species: { name: 'ivysaur', url: 'https://pokeapi.co/api/v2/pokemon-species/2/' },
+          evolution_details: [
+            { trigger: { name: 'level-up', url: 'x' }, min_level: 16, item: null },
+          ],
+          evolves_to: [
+            {
+              species: { name: 'venusaur', url: 'https://pokeapi.co/api/v2/pokemon-species/3/' },
+              evolution_details: [
+                { trigger: { name: 'level-up', url: 'x' }, min_level: 32, item: null },
+              ],
+              evolves_to: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = mapEvolutionChainToDomain(chain);
+
+    expect(result).toEqual({
+      speciesId: 1,
+      speciesName: 'bulbasaur',
+      minLevel: null,
+      triggerName: null,
+      evolvesTo: [
+        {
+          speciesId: 2,
+          speciesName: 'ivysaur',
+          minLevel: 16,
+          triggerName: 'level-up',
+          evolvesTo: [
+            {
+              speciesId: 3,
+              speciesName: 'venusaur',
+              minLevel: 32,
+              triggerName: 'level-up',
+              evolvesTo: [],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('handles a branching chain, like eevee', () => {
+    const chain: EvolutionChainLink = {
+      species: { name: 'eevee', url: 'https://pokeapi.co/api/v2/pokemon-species/133/' },
+      evolution_details: [],
+      evolves_to: [
+        {
+          species: { name: 'vaporeon', url: 'https://pokeapi.co/api/v2/pokemon-species/134/' },
+          evolution_details: [{ trigger: { name: 'use-item', url: 'x' }, min_level: null, item: { name: 'water-stone', url: 'x' } }],
+          evolves_to: [],
+        },
+        {
+          species: { name: 'jolteon', url: 'https://pokeapi.co/api/v2/pokemon-species/135/' },
+          evolution_details: [{ trigger: { name: 'use-item', url: 'x' }, min_level: null, item: { name: 'thunder-stone', url: 'x' } }],
+          evolves_to: [],
+        },
+      ],
+    };
+
+    const result = mapEvolutionChainToDomain(chain);
+
+    expect(result.evolvesTo).toHaveLength(2);
+    expect(result.evolvesTo.map((n) => n.speciesName)).toEqual(['vaporeon', 'jolteon']);
+  });
+});
+
+describe('extractEnglishDescription', () => {
+  const baseSpecies: PokemonSpeciesResponse = {
+    id: 25,
+    name: 'pikachu',
+    evolution_chain: { url: 'https://pokeapi.co/api/v2/evolution-chain/10/' },
+    flavor_text_entries: [],
+  };
+
+  it('picks the english entry and flattens line breaks', () => {
+    const species: PokemonSpeciesResponse = {
+      ...baseSpecies,
+      flavor_text_entries: [
+        {
+          flavor_text: 'Quand plusieurs\fPIKACHU se\nrassemblent...',
+          language: { name: 'fr', url: 'x' },
+          version: { name: 'red', url: 'x' },
+        },
+        {
+          flavor_text: 'When several\fof these POKéMON\ngather, their\npower could\nlight up a city.',
+          language: { name: 'en', url: 'x' },
+          version: { name: 'red', url: 'x' },
+        },
+      ],
+    };
+
+    expect(extractEnglishDescription(species)).toBe(
+      'When several of these POKéMON gather, their power could light up a city.',
+    );
+  });
+
+  it('returns an empty string when there is no english entry', () => {
+    const species: PokemonSpeciesResponse = {
+      ...baseSpecies,
+      flavor_text_entries: [
+        { flavor_text: 'texte francais', language: { name: 'fr', url: 'x' }, version: { name: 'red', url: 'x' } },
+      ],
+    };
+
+    expect(extractEnglishDescription(species)).toBe('');
   });
 });

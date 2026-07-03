@@ -1,4 +1,4 @@
-import { fetchPokemonList, fetchPokemonDetail } from './pokemonApi';
+import { fetchPokemonList, fetchPokemonDetail, fetchPokemonFullDetail } from './pokemonApi';
 
 // mocking fetch directly instead of hitting the real api, faster and no
 // internet dependency
@@ -8,6 +8,15 @@ function mockFetchOnce(body: unknown, ok = true, status = 200) {
     status,
     json: () => Promise.resolve(body),
   }) as unknown as typeof fetch;
+}
+
+// fetchPokemonFullDetail makes 3 sequential calls, one response per call in order
+function mockFetchSequence(...bodies: unknown[]) {
+  const impl = jest.fn();
+  for (const body of bodies) {
+    impl.mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve(body) });
+  }
+  globalThis.fetch = impl as unknown as typeof fetch;
 }
 
 describe('fetchPokemonList', () => {
@@ -93,5 +102,68 @@ describe('fetchPokemonDetail', () => {
     });
 
     await expect(fetchPokemonDetail(25)).rejects.toThrow();
+  });
+});
+
+describe('fetchPokemonFullDetail', () => {
+  const detailBody = {
+    id: 25,
+    name: 'pikachu',
+    height: 4,
+    weight: 60,
+    base_experience: 112,
+    order: 35,
+    is_default: true,
+    sprites: { front_default: 'https://example.com/pikachu.png' },
+    types: [{ slot: 1, type: { name: 'electric', url: 'https://pokeapi.co/api/v2/type/13/' } }],
+    abilities: [],
+    stats: [{ base_stat: 35, effort: 0, stat: { name: 'hp', url: 'https://pokeapi.co/api/v2/stat/1/' } }],
+    moves: [],
+    species: { name: 'pikachu', url: 'https://pokeapi.co/api/v2/pokemon-species/25/' },
+  };
+  const speciesBody = {
+    id: 25,
+    name: 'pikachu',
+    evolution_chain: { url: 'https://pokeapi.co/api/v2/evolution-chain/10/' },
+    flavor_text_entries: [
+      {
+        flavor_text: 'A mouse pokemon.',
+        language: { name: 'en', url: 'https://pokeapi.co/api/v2/language/9/' },
+        version: { name: 'red', url: 'https://pokeapi.co/api/v2/version/1/' },
+      },
+    ],
+  };
+  const evolutionChainBody = {
+    id: 10,
+    chain: {
+      species: { name: 'pichu', url: 'https://pokeapi.co/api/v2/pokemon-species/172/' },
+      evolution_details: [],
+      evolves_to: [
+        {
+          species: { name: 'pikachu', url: 'https://pokeapi.co/api/v2/pokemon-species/25/' },
+          evolution_details: [
+            { trigger: { name: 'level-up', url: 'https://pokeapi.co/api/v2/evolution-trigger/1/' }, min_level: null, item: null },
+          ],
+          evolves_to: [],
+        },
+      ],
+    },
+  };
+
+  it('combines detail, species and evolution chain into one object', async () => {
+    mockFetchSequence(detailBody, speciesBody, evolutionChainBody);
+
+    const result = await fetchPokemonFullDetail(25);
+
+    expect(result.name).toBe('pikachu');
+    expect(result.description).toBe('A mouse pokemon.');
+    expect(result.evolution.speciesName).toBe('pichu');
+    expect(result.evolution.evolvesTo[0]?.speciesName).toBe('pikachu');
+  });
+
+  it('rejects if the species response fails validation', async () => {
+    mockFetchSequence(detailBody, { id: 25 });
+
+    await expect(fetchPokemonFullDetail(25)).rejects.toThrow();
   });
 });

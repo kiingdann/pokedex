@@ -46,3 +46,10 @@ export interface EvolutionNode {
   triggerName: string | null;
   evolvesTo: EvolutionNode[];
 }
+
+// what the detail screen actually renders: base detail plus the two things
+// that need extra api calls (description, evolution chain)
+export interface PokemonFullDetail extends PokemonDetail {
+  description: string;
+  evolution: EvolutionNode;
+}
